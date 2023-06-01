@@ -12,11 +12,11 @@ public class Menu {
     }
 
     public void showMenu() {
-        System.out.println("Bienvenido al menú, por favor elija una opción");
+        System.out.println("Bienvenido al Firmador y Verificafor de Firmas, por favor elija una opción");
         System.out.println("Seleccione (1) para generar el par de claves RSA");
-        System.out.println("Seleccione (2) para verificar archivo ");
-        System.out.println("Seleccione (3) si desea verificar la firma");
-        System.out.println("Seleccione (10) salir");
+        System.out.println("Seleccione (2) para firmar un archivo ");
+        System.out.println("Seleccione (3) si desea verificar la firma de un archivo");
+        System.out.println("Seleccione (4) para salir");
     }
 
     private String[] inputGenerateKeyPair() {
@@ -37,10 +37,9 @@ public class Menu {
     public void doOperation(int option) throws Exception {
         switch (option) {
             case 1 -> verifier.generateKeyPair(inputGenerateKeyPair());
-            case 2 -> {
-                ;
-            }
-            case 3 -> System.out.println("Gracias por usar esta aplicacion, vuelva pronto");
+            case 2 -> verifier.signFile();
+            case 3 -> verifier.verifySignature();
+            case 4 -> System.out.println("Gracias por usar el Firmador y Verificador de Firmas, ¡adiós!");
             default -> System.out.println("Error, opción no válida");
         }
     }
@@ -57,6 +56,6 @@ public class Menu {
             showMenu();
             option = readOption();
             doOperation(option);
-        } while (option != 10);
+        } while (option != 4);
     }
 }

@@ -1,5 +1,7 @@
 import java.security.*;
 import javax.crypto.*;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.PBEParameterSpec;
 
 import java.io.*;
 import java.util.*;
@@ -17,8 +19,6 @@ public class Verifier {
         generatorRSA.initialize(RSA_KEY_SIZE);
         KeyPair keys = generatorRSA.genKeyPair();
 
-        System.out.println("Public key generated: " + keys.getPublic());
-
         // Take the encoded form of the public key for future use.
         byte[] bytesPublic = keys.getPublic().getEncoded();
 
@@ -34,7 +34,6 @@ public class Verifier {
         // The path where the private key is to be stored must be saved for upcoming future uses
         String privatePath = parameters[2] + "/" + privateKey;
 
-        System.out.println("Public key generated: " + keys.getPrivate());
         // Take the encoded form of the private key
         byte[] bytesPrivate = keys.getPrivate().getEncoded();
 
@@ -42,10 +41,10 @@ public class Verifier {
         String password = parameters[3];
 
         // Here we encrypt making a call to the method that encrypts the private key
-        byte[] encryptedBytesPrivate = encryptPrivateKey(password.toCharArray(), bytesPrivate);
+        byte[] encryptedPrivateKeyBytes = encryptPrivateKey(password, bytesPrivate);
 
         // Write the result to the file
-        savePrivateKey(encryptedBytesPrivate, privateKey);
+        savePrivateKey(encryptedPrivateKeyBytes, privateKey);
 
         System.out.println("El par de claves RSA se ha generado y guardado exitosamente.");
     }
@@ -54,38 +53,40 @@ public class Verifier {
         FileOutputStream output = new FileOutputStream(privateKeyName);
         output.write(publicKeyBytes);
         output.close();
+        System.out.println("La clave pública se guardó correctamente");
     }
 
     private void savePrivateKey(byte[] privateKeyBytes, String privateKeyName) throws Exception {
         FileOutputStream output = new FileOutputStream(privateKeyName);
         output.write(privateKeyBytes);
         output.close();
+        System.out.println("La clave privada se guardó correctamente");
     }
 
-    private byte[] encryptPrivateKey(char[] password, byte[] privateBytes) throws Exception {
+    private byte[] encryptPrivateKey(String password, byte[] privateKeyBytes) throws Exception {
+        // Generate a random salt
+        byte[] salt = new byte[8];
+        SecureRandom random = new SecureRandom();
+        random.nextBytes(salt);
 
-        // The first 8 bytes are created, a unique random value that is added to the data before it is encrypted
-        byte[] start = new byte[8];
-        Random random = new Random();
-        random.nextBytes(start);
+        // Generate a key from the password and salt
+        PBEKeySpec pbeKeySpec = new PBEKeySpec(password.toCharArray());
+        SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance("PBE");
+        SecretKey secretKey = secretKeyFactory.generateSecret(pbeKeySpec);
+        PBEParameterSpec pbeParameterSpec = new PBEParameterSpec(salt, 1000);
+        Cipher cipher = Cipher.getInstance("PBEWithMD5AndDES");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, pbeParameterSpec);
 
-        // Create a RSA key
-        KeyPairGenerator generatorRSA = KeyPairGenerator.getInstance("RSA");
-        generatorRSA.initialize(RSA_KEY_SIZE);
-        KeyPair claves = generatorRSA.genKeyPair();
-        PublicKey publicKey = claves.getPublic();
+        // Encrypt the private key
+        byte[] encryptedPrivateKeyBytes = cipher.doFinal(privateKeyBytes);
 
-        // Get RSA cipher in ECB mode with PKCS1 padding
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        System.out.println(Arrays.toString(privateBytes));
-        System.out.println(privateBytes.length);
-        byte[] cipheredText = cipher.doFinal(privateBytes);
+        // Get the parameters of the encryption algorithm
+        AlgorithmParameters algorithmParameters = cipher.getParameters();
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.write(start);
-        baos.write(cipheredText);
-        return baos.toByteArray();
+        // Save the salt and the encrypted private key to a EncryptedPrivateKeyInfo object
+        EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = new EncryptedPrivateKeyInfo(algorithmParameters, encryptedPrivateKeyBytes);
+
+        return encryptedPrivateKeyInfo.getEncoded();
     }
 
     public void signFile() {
