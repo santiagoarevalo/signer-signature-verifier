@@ -19,9 +19,24 @@ public class Menu {
         System.out.println("Seleccione (10) salir");
     }
 
+    private String[] inputGenerateKeyPair() {
+        String[] input = new String[4];
+        System.out.println("Generando el par de claves RSA.\n");
+        System.out.print("Nombre del archivo para grabar la clave pública: ");
+        input[0] = sc.nextLine();
+        System.out.print("Nombre del archivo para grabar la clave privada: ");
+        input[1] = sc.nextLine();
+        System.out.print("Indica la ruta del directorio en el que deseas guardar la clave privada (sin el nombre que indicaste anteriormente). Ejemplo: C:/Users/User/keys" +
+                "\nRuta: ");
+        input[2] = sc.nextLine();
+        System.out.print("Contraseña para proteger la clave privada: ");
+        input[3] = sc.nextLine();
+        return input;
+    }
+
     public void doOperation(int option) throws Exception {
         switch (option) {
-            case 1 -> verifier.generateKeyPair();
+            case 1 -> verifier.generateKeyPair(inputGenerateKeyPair());
             case 2 -> {
                 ;
             }
